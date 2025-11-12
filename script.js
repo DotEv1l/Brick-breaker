@@ -3,7 +3,6 @@ const ctx = canvas.getContext('2d');
 
 let running = false;
 const keys = { left: false, right: false };
-
 let paddle;
 
 class Paddle {
@@ -21,34 +20,38 @@ class Paddle {
     }
 }
 
-
 class Ball {}
 class Brick {}
 class PowerUp {}
 class LevelGen {}
 class PlayerStats {}
 
-startNewRun(seed);
-nextLevel();
-applyUpgrade(upgradeType);
-saveMetaProgress();
-loadMetaProgress();
+function update() {
+    if (!running || !paddle) return;
+    paddle.update();
+}
+function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    paddle.draw(ctx);
+}
+function loop() {
+    update();
+    draw();
+    requestAnimationFrame(loop);
+}
+
+addEventListener('keydown', e => {
+  if (e.code === 'ArrowLeft' || e.code === 'KeyA')  keys.left = true;
+  if (e.code === 'ArrowRight' || e.code === 'KeyD') keys.right = true;
+});
+addEventListener('keyup', e => {
+  if (e.code === 'ArrowLeft' || e.code === 'KeyA')  keys.left = false;
+  if (e.code === 'ArrowRight' || e.code === 'KeyD') keys.right = false;
+});
 
 function initGame() {
-
+    paddle = new Paddle();
+    running = true;
+    requestAnimationFrame(loop);
 }
-
-function update() {
-
-}
-
-function draw(ctx) {
-    ctx.fillStyle = '#9db9e8';
-    ctx.fillRect(this.x, this.y, this.w, this.h);
-}
-
-function loop() {
-
-}
-
-requestAnimationFrame(loop);
+initGame();
