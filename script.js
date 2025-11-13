@@ -3,8 +3,10 @@ const ctx = canvas.getContext('2d');
 
 let running = false;
 const keys = { left: false, right: false };
+
 let paddle;
 let ball;
+let bricks = [];
 
 class Paddle {
   constructor() {
@@ -98,10 +100,57 @@ class Ball {
   }
 }
 
-class Brick {}
+class Brick {
+    constructor(x, y, w, h, hp = 1) {
+        this.x = x; this.y = y;
+        this.w = w; this.h = h;
+        this.hp = hp;
+        this.maxHp = hp;
+        this.alive = true; 
+    }
+    hit() {
+        this.hp--;
+        if (this.hp <= 0) this.alive = false;
+    }
+    draw(ctx) {
+    if (!this.alive) return;
+
+    const ratio = this.hp / this.maxHp;
+    const t = Math.max(0, Math.min(1, ratio));
+
+    let color;
+    if (t > 0.66) color = "#4caf50";
+    else if (t > 0.33) color = "#cddc39";
+    else if (t > 0.20) color = "#ff9800";
+    else color = "#f44336";
+
+    ctx.fillStyle = color;
+    ctx.fillRect(this.x, this.y, this.w, this.h);
+    }
+}
 class PowerUp {}
 class LevelGen {}
 class PlayerStats {}
+
+function buildLevel1() {
+    bricks = [];
+
+    const rows = 5;
+    const cols = 10;
+    const padding = 4;
+    const brickW = (canvas.width - padding * (cols + 1)) / cols;
+    const brickH = 20;
+    const offsetY = 60;
+
+    for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+            const x = padding + c * (brickW + padding);
+            const y = offsetY + r * (brickH + padding);
+            const hp = 1;
+            bricks.push(new Brick(x, y, brickW, brickH, hp));
+        }
+    }
+}
 
 function update() {
   if (!running || !paddle || !ball) return;
@@ -110,9 +159,12 @@ function update() {
 }
 
 function draw() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  paddle.draw(ctx);
-  ball.draw(ctx);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    paddle.draw(ctx);
+    ball.draw(ctx);
+    for (const brick of bricks) {
+        brick.draw(ctx);
+    }
 }
 
 function loop() {
@@ -136,17 +188,20 @@ addEventListener('keyup', e => {
 
 const launchBtn = document.getElementById('btnLaunch');
     if (launchBtn) {
-    launchBtn.addEventListener('click', () => {
-        if (!ball.launched) {
-            ball.launch();
-        }
-    });
-}
+        launchBtn.addEventListener('click', () => {
+            if (!ball.launched) {
+                ball.launch();
+            }
+        });
+    }
 
 function initGame() {
   paddle = new Paddle();
   ball = new Ball();
   ball.reset(paddle);
+
+  buildLevel1();
+
   running = true;
   requestAnimationFrame(loop);
 }
