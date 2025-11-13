@@ -7,6 +7,9 @@ const keys = { left: false, right: false };
 let paddle;
 let ball;
 let bricks = [];
+let score = 0;
+let lives = 3;
+let level = 1;
 
 class Paddle {
   constructor() {
@@ -22,7 +25,6 @@ class Paddle {
     ctx.fillRect(this.x, this.y, this.w, this.h);
   }
 }
-
 class Ball {
   constructor() {
     this.r = 7;
@@ -70,6 +72,28 @@ class Ball {
       this.vy *= -1;
     }
 
+    for (const brick of bricks) {
+      if (!brick.alive) continue;
+
+      const overlapX = this.x + this.r >= brick.x && this.x - this.r <= brick.x + brick.w;
+      const overlapY = this.y + this.r >= brick.y && this.y - this.r <= brick.y + brick.h;
+
+      if (overlapX && overlapY) {
+        brick.hit();
+        score += 10;
+
+        const wasGoingDown = this.vy > 0;
+        if (wasGoingDown) {
+          this.y = brick.y - this.r;
+        } else {
+          this.y = brick.y + brick.h + this.r;
+        }
+
+        this.vy *= -1;
+        break;
+      }
+    }
+
     if (this.vy > 0) {
       const withinX = this.x >= p.x && this.x <= p.x + p.w;
       const hitY = this.y + this.r >= p.y && this.y + this.r <= p.y + p.h;
@@ -79,12 +103,11 @@ class Ball {
 
         const paddleCenter = p.x + p.w / 2;
         const hitPos = (this.x - paddleCenter) / (p.w / 2);
-
         const speed = Math.sqrt(this.vx * this.vx + this.vy * this.vy) || 5;
 
         this.vx = hitPos * speed;
         this.vy = -Math.abs(this.vy);
-        }
+      }
     }
 
     if (this.y - this.r > canvas.height) {
@@ -99,20 +122,19 @@ class Ball {
     ctx.fill();
   }
 }
-
 class Brick {
-    constructor(x, y, w, h, hp = 1) {
-        this.x = x; this.y = y;
-        this.w = w; this.h = h;
-        this.hp = hp;
-        this.maxHp = hp;
-        this.alive = true; 
-    }
-    hit() {
-        this.hp--;
-        if (this.hp <= 0) this.alive = false;
-    }
-    draw(ctx) {
+  constructor(x, y, w, h, hp = 1) {
+    this.x = x; this.y = y;
+    this.w = w; this.h = h;
+    this.hp = hp;
+    this.maxHp = hp;
+    this.alive = true;
+  }
+  hit() {
+    this.hp--;
+    if (this.hp <= 0) this.alive = false;
+  }
+  draw(ctx) {
     if (!this.alive) return;
 
     const ratio = this.hp / this.maxHp;
@@ -126,30 +148,30 @@ class Brick {
 
     ctx.fillStyle = color;
     ctx.fillRect(this.x, this.y, this.w, this.h);
-    }
+  }
 }
 class PowerUp {}
 class LevelGen {}
 class PlayerStats {}
 
 function buildLevel1() {
-    bricks = [];
+  bricks = [];
 
-    const rows = 5;
-    const cols = 10;
-    const padding = 4;
-    const brickW = (canvas.width - padding * (cols + 1)) / cols;
-    const brickH = 20;
-    const offsetY = 60;
+  const rows = 5;
+  const cols = 10;
+  const padding = 4;
+  const brickW = (canvas.width - padding * (cols + 1)) / cols;
+  const brickH = 20;
+  const offsetY = 60;
 
-    for (let r = 0; r < rows; r++) {
-        for (let c = 0; c < cols; c++) {
-            const x = padding + c * (brickW + padding);
-            const y = offsetY + r * (brickH + padding);
-            const hp = 1;
-            bricks.push(new Brick(x, y, brickW, brickH, hp));
-        }
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const x = padding + c * (brickW + padding);
+      const y = offsetY + r * (brickH + padding);
+      const hp = 1;
+      bricks.push(new Brick(x, y, brickW, brickH, hp));
     }
+  }
 }
 
 function update() {
@@ -158,18 +180,29 @@ function update() {
   ball.update(paddle);
 }
 
+function updateHud() {
+  const elScore = document.getElementById('uiScore');
+  const elLevel = document.getElementById('uiLevel');
+  const elLives = document.getElementById('uiLives');
+
+  if (elScore) elScore.textContent = score;
+  if (elLevel) elLevel.textContent = level;
+  if (elLives) elLives.textContent = lives;
+}
+
 function draw() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    paddle.draw(ctx);
-    ball.draw(ctx);
-    for (const brick of bricks) {
-        brick.draw(ctx);
-    }
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  paddle.draw(ctx);
+  ball.draw(ctx);
+  for (const brick of bricks) {
+    brick.draw(ctx);
+  }
 }
 
 function loop() {
   update();
   draw();
+  updateHud();
   requestAnimationFrame(loop);
 }
 
@@ -187,15 +220,19 @@ addEventListener('keyup', e => {
 });
 
 const launchBtn = document.getElementById('btnLaunch');
-    if (launchBtn) {
-        launchBtn.addEventListener('click', () => {
-            if (!ball.launched) {
-                ball.launch();
-            }
-        });
+if (launchBtn) {
+  launchBtn.addEventListener('click', () => {
+    if (!ball.launched) {
+      ball.launch();
     }
+  });
+}
 
 function initGame() {
+  score = 0;
+  lives = 3;
+  level = 1;
+
   paddle = new Paddle();
   ball = new Ball();
   ball.reset(paddle);
