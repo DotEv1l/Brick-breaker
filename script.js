@@ -11,6 +11,24 @@ let score = 0;
 let lives = 3;
 let level = 1;
 
+// Enemy types
+const ROW_PATTERNS = [
+  // full line
+  [1,1,1,1,1,1,1,1,1,1],
+  // stripes
+  [1,0,1,0,1,0,1,0,1,0],
+  // staggered pairs
+  [0,1,1,0,0,1,1,0,0,1],
+  // center block
+  [0,0,1,1,1,1,1,1,0,0],
+  // T-shape-ish
+  [0,1,1,1,0,0,1,1,1,0],
+  // zigzag
+  [1,1,0,0,1,1,0,0,1,1],
+  // “holes” pattern
+  [1,1,1,0,1,0,1,1,1,0]
+];
+
 class Paddle {
   constructor() {
     this.x = 350; this.y = 520; this.w = 100; this.h = 16; this.v = 8;
@@ -78,16 +96,18 @@ class Ball {
       const overlapX = this.x + this.r >= brick.x && this.x - this.r <= brick.x + brick.w;
       const overlapY = this.y + this.r >= brick.y && this.y - this.r <= brick.y + brick.h;
 
-      if (overlapX && overlapY) {
-        brick.hit();
-        score += 10;
-
-        const wasGoingDown = this.vy > 0;
-        if (wasGoingDown) {
-          this.y = brick.y - this.r;
-        } else {
-          this.y = brick.y + brick.h + this.r;
-        }
+        if (overlapX && overlapY) {
+            brick.hit();
+            const died = brick.hit();
+                if (died) {
+                    score += brick.maxHp * 10;
+                }
+            const wasGoingDown = this.vy > 0;
+            if (wasGoingDown) {
+                this.y = brick.y - this.r;
+            } else {
+                this.y = brick.y + brick.h + this.r;
+            }
 
         this.vy *= -1;
         break;
@@ -123,17 +143,22 @@ class Ball {
   }
 }
 class Brick {
-  constructor(x, y, w, h, hp = 1) {
-    this.x = x; this.y = y;
-    this.w = w; this.h = h;
-    this.hp = hp;
-    this.maxHp = hp;
-    this.alive = true;
-  }
-  hit() {
-    this.hp--;
-    if (this.hp <= 0) this.alive = false;
-  }
+    constructor(x, y, w, h, hp = 1) {
+        this.x = x; this.y = y;
+        this.w = w; this.h = h;
+        this.hp = hp;
+        this.maxHp = hp;
+        this.alive = true;
+    }
+    hit() {
+        this.hp--;
+        if (this.hp <= 0) {
+            this.alive = false;
+            return true;
+        }
+        return false;
+    }
+
   draw(ctx) {
     if (!this.alive) return;
 
@@ -154,30 +179,45 @@ class PowerUp {}
 class LevelGen {}
 class PlayerStats {}
 
-function buildLevel1() {
-  bricks = [];
+function buildLevel(level) {
+    bricks = [];
 
-  const rows = 5;
-  const cols = 10;
-  const padding = 4;
-  const brickW = (canvas.width - padding * (cols + 1)) / cols;
-  const brickH = 20;
-  const offsetY = 60;
+    const rows = 5;
+    const cols = 10;
+    const padding = 4;
+    const brickW = (canvas.width - padding * (cols + 1)) / cols;
+    const brickH = 20;
+    const offsetY = 60;
 
-  for (let r = 0; r < rows; r++) {
-    for (let c = 0; c < cols; c++) {
-      const x = padding + c * (brickW + padding);
-      const y = offsetY + r * (brickH + padding);
-      const hp = 1;
-      bricks.push(new Brick(x, y, brickW, brickH, hp));
+    for (let r = 0; r < rows; r++) {
+        const pattern = ROW_PATTERNS[(r + level) % ROW_PATTERNS.length];
+
+        for (let c = 0; c < cols; c++) {
+            if (!pattern[c]) continue;
+
+            const x = padding + c * (brickW + padding);
+            const y = offsetY + r * (brickH + padding);
+
+            const baseHp = 1 + Math.floor((level - 1) * 0.7);
+            const rowBonus = Math.floor(r / 2);
+            let hp = baseHp + rowBonus;
+
+            const extraChance = 0.15 + level * 0.03;
+            if (Math.random() < extraChance) hp++;
+
+            bricks.push(new Brick(x, y, brickW, brickH, hp));
+        }
     }
-  }
 }
 
 function update() {
-  if (!running || !paddle || !ball) return;
-  paddle.update();
-  ball.update(paddle);
+    if (!running || !paddle || !ball) return;
+    paddle.update();
+    ball.update(paddle);
+
+    if (allBricksCleared()) {
+        running = false;
+    }
 }
 
 function updateHud() {
@@ -206,6 +246,19 @@ function loop() {
   requestAnimationFrame(loop);
 }
 
+function allBricksCleared() {
+    return bricks.every(b => !b.alive);
+}
+
+function nextLevel() {
+    level++;
+    paddle = new Paddle();
+    ball.reset(paddle);
+    buildLevel(level);
+    running = true;
+}
+
+
 addEventListener('keydown', e => {
   if (e.code === 'ArrowLeft' || e.code === 'KeyA') keys.left = true;
   if (e.code === 'ArrowRight' || e.code === 'KeyD') keys.right = true;
@@ -227,19 +280,27 @@ if (launchBtn) {
     }
   });
 }
+const nextBtn = document.getElementById('btnNext');
+if (nextBtn) {
+    nextBtn.addEventListener('click', () => {
+        nextLevel();
+    });
+}
 
 function initGame() {
-  score = 0;
-  lives = 3;
-  level = 1;
+    score = 0;
+    lives = 3;
+    level = 1;
 
-  paddle = new Paddle();
-  ball = new Ball();
-  ball.reset(paddle);
+    paddle = new Paddle();
+    ball = new Ball();
+    ball.reset(paddle);
 
-  buildLevel1();
 
-  running = true;
-  requestAnimationFrame(loop);
+    // buildLevel1();
+    buildLevel(level);        
+
+    running = true;
+    requestAnimationFrame(loop);
 }
 initGame();
