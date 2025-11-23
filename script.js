@@ -1,5 +1,7 @@
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
+const MAX_SPEED = 7;
+const BASE_SPEED = 5; 
 
 let running = false;
 const keys = { left: false, right: false };
@@ -7,11 +9,40 @@ const keys = { left: false, right: false };
 let paddle;
 let ball;
 let bricks = [];
-let rng = Math.random;
 let score = 0;
 let lives = 3;
 let level = 1;
+
 let difficulty = "normal";
+let rng = Math.random;
+let currentSeed = null;
+
+function mulberry32(seed) {
+  return function() {
+      let t = seed += 0x6D2B79F5;
+      t = Math.imul(t ^ t >>> 15, t | 1);
+      t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  }
+}
+
+function initSeed() {
+    const seedInput = document.getElementById('seedInput');
+    const uiSeed = document.getElementById('uiSeed');
+
+    let seedValue = seedInput ? seedInput.value.trim() : "";
+
+    if (!seedValue) {
+        seedValue = Math.floor(Math.random() * 1_000_000);
+    }
+
+    seedValue = Number(seedValue) || 1;
+
+    currentSeed = seedValue;
+    rng = mulberry32(seedValue);
+
+    if (uiSeed) uiSeed.textContent = seedValue;
+}
 
 const DIFFICULTY = {
     easy: {
@@ -55,9 +86,9 @@ const PATTERNS_DENSE = [
 
 const newRunBtn = document.getElementById('btnNewRun');
 if (newRunBtn) {
-    newRunBtn.addEventListener('click', () => {
-        initGame();
-    });
+  newRunBtn.addEventListener('click', () => {
+    initGame();
+      });
 }
 
 
@@ -109,6 +140,13 @@ class Ball {
     this.x += this.vx;
     this.y += this.vy;
 
+    let spd = Math.sqrt(this.vx*this.vx + this.vy*this.vy);
+    if (spd > MAX_SPEED) {
+      this.vx = (this.vx / spd) * MAX_SPEED;
+      this.vy = (this.vy / spd) * MAX_SPEED;
+    }
+
+
     if (this.x - this.r <= 0) {
       this.x = this.r;
       this.vx *= -1;
@@ -130,21 +168,29 @@ class Ball {
       const overlapY = this.y + this.r >= brick.y && this.y - this.r <= brick.y + brick.h;
 
       if (overlapX && overlapY) {
-        const died = brick.hit();
+       const died = brick.hit();
         if (died) {
           score += brick.maxHp * 10;
         }
 
         const wasGoingDown = this.vy > 0;
         if (wasGoingDown) {
-          this.y = brick.y - this.r;
+        this.y = brick.y - this.r;
         } else {
-          this.y = brick.y + brick.h + this.r;
+        this.y = brick.y + brick.h + this.r;
         }
 
         this.vy *= -1;
+
+        let spd = Math.sqrt(this.vx*this.vx + this.vy*this.vy);
+        if (spd > MAX_SPEED) {
+          this.vx = (this.vx / spd) * MAX_SPEED;
+          this.vy = (this.vy / spd) * MAX_SPEED;
+        }
+
         break;
       }
+
     }
 
     if (this.vy > 0) {
@@ -156,10 +202,15 @@ class Ball {
 
         const paddleCenter = p.x + p.w / 2;
         const hitPos = (this.x - paddleCenter) / (p.w / 2);
-        const speed = Math.sqrt(this.vx * this.vx + this.vy * this.vy) || 5;
 
-        this.vx = hitPos * speed;
+        this.vx = hitPos * BASE_SPEED;
         this.vy = -Math.abs(this.vy);
+
+        let spd = Math.sqrt(this.vx*this.vx + this.vy*this.vy);
+        if (spd > MAX_SPEED) {
+            this.vx = (this.vx / spd) * MAX_SPEED;
+            this.vy = (this.vy / spd) * MAX_SPEED;
+        }
       }
     }
 
@@ -222,39 +273,14 @@ class PowerUp {}
 class LevelGen {}
 class PlayerStats {}
   
-function mulberry32(seed) {
-  return function() {
-      let t = seed += 0x6D2B79F5;
-      t = Math.imul(t ^ t >>> 15, t | 1);
-      t ^= t + Math.imul(t ^ t >>> 7, t | 61);
-      return ((t ^ t >>> 14) >>> 0) / 4294967296;
-  }
-}
-
-function initSeed() {
-    const seedInput = document.getElementById('seedInput');
-    const uiSeed = document.getElementById('uiSeed');
-
-    let seedValue = seedInput ? seedInput.value.trim() : "";
-
-    if (!seedValue) {
-        seedValue = Math.floor(Math.random() * 1_000_000);
-    }
-
-    seedValue = Number(seedValue) || 1;
-
-    rng = mulberry32(seedValue);
-
-    if (uiSeed) uiSeed.textContent = seedValue;
-
-    return seedValue;
-}
-
 function pickPattern(difficulty) {
   switch (difficulty) {
-      case "easy":   return PATTERNS_SIMPLE[Math.floor(rng()*PATTERNS_SIMPLE.length)];
-      case "hard":   return PATTERNS_DENSE[Math.floor(rng()*PATTERNS_DENSE.length)];
-      default:       return PATTERNS_MIXED[Math.floor(rng()*PATTERNS_MIXED.length)];
+      case "easy":
+        return PATTERNS_SIMPLE[Math.floor(rng()*PATTERNS_SIMPLE.length)];
+      case "hard":
+        return PATTERNS_DENSE[Math.floor(rng()*PATTERNS_DENSE.length)];
+      default:
+        return PATTERNS_MIXED[Math.floor(rng()*PATTERNS_MIXED.length)];
   }
 }
 
@@ -301,6 +327,9 @@ function update() {
 
   if (allBricksCleared()) {
     running = false;
+
+    const nextBtn = document.getElementById('btnNext');
+    if (nextBtn) nextBtn.disabled = false;
   }
 }
 
@@ -349,6 +378,10 @@ function allBricksCleared() {
 
 function nextLevel() {
   level++;
+
+  const nextBtn = document.getElementById('btnNext');
+  if (nextBtn) nextBtn.disabled = true; 
+
   paddle = new Paddle();
   ball.reset(paddle);
   buildLevel(level);
@@ -379,6 +412,7 @@ if (launchBtn) {
 
 const nextBtn = document.getElementById('btnNext');
 if (nextBtn) {
+  nextBtn.disabled = true;
   nextBtn.addEventListener('click', () => {
     nextLevel();
   });
@@ -410,6 +444,9 @@ function initGame() {
 
   initSeed();
 
+  const nextBtn = document.getElementById('btnNext');
+  if (nextBtn) nextBtn.disabled = true;
+
   paddle = new Paddle();
   ball = new Ball();
   ball.reset(paddle);
@@ -417,7 +454,7 @@ function initGame() {
   buildLevel(level);
 
   running = true;
-  requestAnimationFrame(loop);
 }
 
 initGame();
+requestAnimationFrame(loop);
