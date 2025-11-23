@@ -7,10 +7,10 @@ const keys = { left: false, right: false };
 let paddle;
 let ball;
 let bricks = [];
+let rng = Math.random;
 let score = 0;
 let lives = 3;
 let level = 1;
-
 let difficulty = "normal";
 
 const DIFFICULTY = {
@@ -18,7 +18,6 @@ const DIFFICULTY = {
         hpMult: 0.7,
         rowBonusMult: 0.8,
         extraHpChance: 0.05,
-        scoreMult: 0.8,
         rows: 4,
         patternWeight: "simple"
     },
@@ -26,7 +25,6 @@ const DIFFICULTY = {
         hpMult: 1.0,
         rowBonusMult: 1.0,
         extraHpChance: 0.15,
-        scoreMult: 1.0,
         rows: 5,
         patternWeight: "mixed"
     },
@@ -34,7 +32,6 @@ const DIFFICULTY = {
         hpMult: 1.4,
         rowBonusMult: 1.3,
         extraHpChance: 0.30,
-        scoreMult: 1.25,
         rows: 6,
         patternWeight: "dense"
     }
@@ -56,13 +53,13 @@ const PATTERNS_DENSE = [
     [1,1,1,0,1,0,1,1,1,0]
 ];
 
-function pickPattern(difficulty) {
-    switch (difficulty) {
-        case "easy":   return PATTERNS_SIMPLE[Math.floor(Math.random()*PATTERNS_SIMPLE.length)];
-        case "hard":   return PATTERNS_DENSE[Math.floor(Math.random()*PATTERNS_DENSE.length)];
-        default:       return PATTERNS_MIXED[Math.floor(Math.random()*PATTERNS_MIXED.length)];
-    }
+const newRunBtn = document.getElementById('btnNewRun');
+if (newRunBtn) {
+    newRunBtn.addEventListener('click', () => {
+        initGame();
+    });
 }
+
 
 class Paddle {
   constructor() {
@@ -224,6 +221,42 @@ class Brick {
 class PowerUp {}
 class LevelGen {}
 class PlayerStats {}
+  
+function mulberry32(seed) {
+  return function() {
+      let t = seed += 0x6D2B79F5;
+      t = Math.imul(t ^ t >>> 15, t | 1);
+      t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  }
+}
+
+function initSeed() {
+    const seedInput = document.getElementById('seedInput');
+    const uiSeed = document.getElementById('uiSeed');
+
+    let seedValue = seedInput ? seedInput.value.trim() : "";
+
+    if (!seedValue) {
+        seedValue = Math.floor(Math.random() * 1_000_000);
+    }
+
+    seedValue = Number(seedValue) || 1;
+
+    rng = mulberry32(seedValue);
+
+    if (uiSeed) uiSeed.textContent = seedValue;
+
+    return seedValue;
+}
+
+function pickPattern(difficulty) {
+  switch (difficulty) {
+      case "easy":   return PATTERNS_SIMPLE[Math.floor(rng()*PATTERNS_SIMPLE.length)];
+      case "hard":   return PATTERNS_DENSE[Math.floor(rng()*PATTERNS_DENSE.length)];
+      default:       return PATTERNS_MIXED[Math.floor(rng()*PATTERNS_MIXED.length)];
+  }
+}
 
 function buildLevel(level) {
   bricks = [];
@@ -254,7 +287,7 @@ function buildLevel(level) {
 
       let hp = baseHp + rowBonus;
 
-      if (Math.random() < set.extraHpChance) hp++;
+      if (rng() < set.extraHpChance) hp++;
 
       bricks.push(new Brick(x, y, brickW, brickH, hp));
     }
@@ -374,6 +407,8 @@ function initGame() {
   score = 0;
   lives = 3;
   level = 1;
+
+  initSeed();
 
   paddle = new Paddle();
   ball = new Ball();
