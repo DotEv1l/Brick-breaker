@@ -111,6 +111,33 @@
     </div>
   </div>
 
+  <div class="modal fade" id="gameOverModal" tabindex="-1" aria-labelledby="gameOverLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content bg-dark text-light">
+      <div class="modal-header border-0">
+        <h5 class="modal-title" id="gameOverLabel">Game Over</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p class="mb-1">Run summary:</p>
+        <p class="mb-0">Level reached: <span id="goLevel">1</span></p>
+        <p class="mb-3">Score: <span id="goScore">0</span></p>
+        <p class="small text-secondary mb-0">
+          Upgrades and meta-progression are not implemented yet. This is a placeholder for the future upgrade screen.
+        </p>
+      </div>
+      <div class="modal-footer border-0 d-flex justify-content-between">
+        <button type="button" class="btn btn-outline-info btn-sm" id="btnGoUpgrades">
+          Upgrades (WIP)
+        </button>
+        <button type="button" class="btn btn-primary btn-sm" id="btnPlayAgain">
+          Play Again
+        </button>
+      </div>
+    </div>
+  </div>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script src="script.js"></script>
 </body>
