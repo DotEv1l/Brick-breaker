@@ -17,6 +17,12 @@ let difficulty = "normal";
 let rng = Math.random;
 let currentSeed = null;
 
+const META_KEY = 'bb_meta_v1';
+const RUN_KEY  = 'bb_run_v1';
+
+let meta = null;
+
+
 function mulberry32(seed) {
   return function() {
       let t = seed += 0x6D2B79F5;
@@ -33,7 +39,7 @@ function initSeed() {
     let seedValue = seedInput ? seedInput.value.trim() : "";
 
     if (!seedValue) {
-        seedValue = Math.floor(Math.random() * 1_000_000);
+        seedValue = Math.floor(rng() * 1_000_000);
     }
 
     seedValue = Number(seedValue) || 1;
@@ -91,10 +97,26 @@ if (newRunBtn) {
       });
 }
 
+/* Helpers for the paddle and lives */
+
+function getStartingLives() {
+  if (!meta || !meta.upgrades) return 3;
+  return 3 + (meta.upgrades.extraLife || 0);
+}
+
+function getPaddleWidth() {
+  if (!meta || !meta.upgrades) return 100;
+  // each level = +20px width
+  return 100 + (meta.upgrades.paddleWidth || 0) * 20;
+}
 
 class Paddle {
   constructor() {
-    this.x = 350; this.y = 520; this.w = 100; this.h = 16; this.v = 8;
+    this.w = getPaddleWidth();
+    this.h = 16;
+    this.x = (canvas.width - this.w) / 2;
+    this.y = 520;
+    this.v = 8;
   }
   update() {
     if (keys.left) this.x -= this.v;
@@ -190,7 +212,6 @@ class Ball {
 
         break;
       }
-
     }
 
     if (this.vy > 0) {
@@ -219,6 +240,7 @@ class Ball {
 
       if (lives <= 0) {
         running = false;
+        clearRun();
         showGameOver();
         return;
       }
@@ -328,10 +350,18 @@ function update() {
   if (allBricksCleared()) {
     running = false;
 
+    meta = loadMeta();
+    const reward = 10 * level;
+    meta.currency = (meta.currency || 0) + reward;
+    saveMeta();
+
+    saveRun(true);
+
     const nextBtn = document.getElementById('btnNext');
     if (nextBtn) nextBtn.disabled = false;
   }
 }
+
 
 function updateHud() {
   const elScore = document.getElementById('uiScore');
@@ -410,6 +440,13 @@ if (launchBtn) {
   });
 }
 
+const continueBtn = document.getElementById('btnContinue');
+if (continueBtn) {
+  continueBtn.addEventListener('click', () => {
+    loadRun();
+  });
+}
+
 const nextBtn = document.getElementById('btnNext');
 if (nextBtn) {
   nextBtn.disabled = true;
@@ -433,13 +470,172 @@ if (playAgainBtn) {
 const upgradesBtn = document.getElementById('btnGoUpgrades');
 if (upgradesBtn) {
   upgradesBtn.addEventListener('click', () => {
-    alert('Upgrades screen is not implemented yet. This will be the meta-progression hub.');
+    openUpgradesMenu();
   });
 }
 
+function openUpgradesMenu() {
+  meta = loadMeta();
+
+  const costs = {
+    paddleWidth: [20, 40, 80],
+    extraLife:   [50, 100]
+  };
+
+  const pwLevel = meta.upgrades.paddleWidth || 0;
+  const elLevel = meta.upgrades.extraLife || 0;
+
+  const nextPwCost = costs.paddleWidth[pwLevel];
+  const nextElCost = costs.extraLife[elLevel];
+
+  const msg =
+    `Currency: ${meta.currency}\n\n` +
+    `1) Wider Paddle\n` +
+    `   Level: ${pwLevel}, Next cost: ${nextPwCost ?? 'MAX'}\n\n` +
+    `2) Extra Life\n` +
+    `   Level: ${elLevel}, Next cost: ${nextElCost ?? 'MAX'}\n\n` +
+    `Enter 1 or 2 to buy, or anything else to cancel.`;
+
+  const choice = prompt(msg);
+  if (choice === '1') {
+    buyUpgrade('paddleWidth', costs);
+  } else if (choice === '2') {
+    buyUpgrade('extraLife', costs);
+  } else {
+  }
+}
+
+function buyUpgrade(key, costs) {
+  meta = loadMeta();
+
+  const level = meta.upgrades[key] || 0;
+  const costArr = costs[key];
+  const cost = costArr[level];
+
+  if (cost == null) {
+    alert('This upgrade is already at max level.');
+    return;
+  }
+
+  if (meta.currency < cost) {
+    alert(`Not enough currency. Need ${cost}, you have ${meta.currency}.`);
+    return;
+  }
+
+  meta.currency -= cost;
+  meta.upgrades[key] = level + 1;
+  saveMeta();
+
+  alert(
+    `Upgrade purchased!\n` +
+    `${key} is now level ${meta.upgrades[key]}.\n` +
+    `Changes apply fully on your next NEW run.`
+  );
+}
+
+function loadMeta() {
+  try {
+    const raw = localStorage.getItem(META_KEY);
+    if (!raw) {
+      return {
+        currency: 0,
+        upgrades: {
+          paddleWidth: 0,
+          extraLife: 0
+        }
+      };
+    }
+    const data = JSON.parse(raw);
+    // harden defaults
+    if (!data.upgrades) {
+      data.upgrades = { paddleWidth: 0, extraLife: 0 };
+    } else {
+      if (typeof data.upgrades.paddleWidth !== 'number') data.upgrades.paddleWidth = 0;
+      if (typeof data.upgrades.extraLife !== 'number') data.upgrades.extraLife = 0;
+    }
+    if (typeof data.currency !== 'number') data.currency = 0;
+    return data;
+  } catch (e) {
+    console.warn('Failed to load meta, resetting.', e);
+    return {
+      currency: 0,
+      upgrades: {
+        paddleWidth: 0,
+        extraLife: 0
+      }
+    };
+  }
+}
+
+function saveRun(pendingNextLevel = false) {
+  const targetLevel = pendingNextLevel ? level + 1 : level;
+
+  const data = {
+    seed: currentSeed,
+    level: targetLevel,
+    score: score,
+    lives: lives,
+    difficulty: difficulty
+  };
+
+  localStorage.setItem(RUN_KEY, JSON.stringify(data));
+}
+
+function clearRun() {
+  localStorage.removeItem(RUN_KEY);
+}
+
+function loadRun() {
+  const raw = localStorage.getItem(RUN_KEY);
+  if (!raw) {
+    alert('No saved run found.');
+    return;
+  }
+
+  let data;
+  try {
+    data = JSON.parse(raw);
+  } catch (e) {
+    console.warn('Failed to parse run save, clearing.', e);
+    clearRun();
+    alert('Saved run was corrupted and has been cleared.');
+    return;
+  }
+
+  meta = loadMeta();  // <-- make sure upgrades are loaded
+
+  difficulty = data.difficulty || 'normal';
+  currentSeed = data.seed || 1;
+  rng = mulberry32(currentSeed);
+
+  score = data.score || 0;
+  level = data.level || 1;
+  lives = data.lives || getStartingLives();
+
+  for (let lv = 1; lv <= level; lv++) {
+    buildLevel(lv);
+  }
+
+  const nextBtn = document.getElementById('btnNext');
+  if (nextBtn) nextBtn.disabled = true;
+
+  paddle = new Paddle();
+  ball = new Ball();
+  ball.reset(paddle);
+
+  running = true;
+}
+
+function saveMeta() {
+  if (!meta) return;
+  localStorage.setItem(META_KEY, JSON.stringify(meta));
+}
+
 function initGame() {
+  meta = loadMeta();
+
   score = 0;
-  lives = 3;
+  lives = getStartingLives();
   level = 1;
 
   initSeed();
