@@ -246,8 +246,11 @@ function buildLevel(level) {
       const x = padding + c * (brickW + padding);
       const y = offsetY + r * (brickH + padding);
 
-      const baseHp = 1 + Math.floor((level - 1) * 0.7);
-      const rowBonus = Math.floor(r / 2);
+      let baseHp = 1 + Math.floor((level - 1) * 0.7);
+      baseHp = Math.ceil(baseHp * set.hpMult);
+
+      let rowBonus = Math.floor(r / 2);
+      rowBonus = Math.ceil(rowBonus * set.rowBonusMult);
 
       let hp = baseHp + rowBonus;
 
