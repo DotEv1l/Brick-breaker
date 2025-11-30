@@ -20,8 +20,30 @@ let currentSeed = null;
 const META_KEY = 'bb_meta_v1';
 const RUN_KEY  = 'bb_run_v1';
 
+const UPGRADE_COSTS = {
+  paddleWidth: [20, 40, 80],
+  extraLife:   [50, 100]
+};
+
 let meta = null;
 
+function showMainMenu() {
+  running = false;
+
+  const menu = document.getElementById('mainMenu');
+  const gameScreen = document.getElementById('gameScreen');
+
+  if (menu) menu.style.display = 'flex';
+  if (gameScreen) gameScreen.style.display = 'none';
+}
+
+function showGameScreen() {
+  const menu = document.getElementById('mainMenu');
+  const gameScreen = document.getElementById('gameScreen');
+
+  if (menu) menu.style.display = 'none';
+  if (gameScreen) gameScreen.style.display = 'block';
+}
 
 function mulberry32(seed) {
   return function() {
@@ -90,15 +112,38 @@ const PATTERNS_DENSE = [
     [1,1,1,0,1,0,1,1,1,0]
 ];
 
+const menuNewRunBtn = document.getElementById('menuNewRun');
+if (menuNewRunBtn) {
+  menuNewRunBtn.addEventListener('click', () => {
+    showGameScreen();
+    initGame();
+  });
+}
+
+const menuContinueBtn = document.getElementById('menuContinue');
+if (menuContinueBtn) {
+  menuContinueBtn.addEventListener('click', () => {
+    showGameScreen();
+    loadRun();
+  });
+}
+
+const menuUpgradesBtn = document.getElementById('menuUpgrades');
+if (menuUpgradesBtn) {
+  menuUpgradesBtn.addEventListener('click', () => {
+    openUpgradesMenu();
+  });
+}
+
 const newRunBtn = document.getElementById('btnNewRun');
 if (newRunBtn) {
   newRunBtn.addEventListener('click', () => {
+    showGameScreen();
     initGame();
-      });
+  });
 }
 
 /* Helpers for the paddle and lives */
-
 function getStartingLives() {
   if (!meta || !meta.upgrades) return 3;
   return 3 + (meta.upgrades.extraLife || 0);
@@ -362,7 +407,6 @@ function update() {
   }
 }
 
-
 function updateHud() {
   const elScore = document.getElementById('uiScore');
   const elLevel = document.getElementById('uiLevel');
@@ -375,6 +419,10 @@ function updateHud() {
 
 function draw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // If game isnt initialized yet, dont try to draw
+  if (!paddle || !ball) return;
+
   paddle.draw(ctx);
   ball.draw(ctx);
   for (const brick of bricks) {
@@ -443,6 +491,7 @@ if (launchBtn) {
 const continueBtn = document.getElementById('btnContinue');
 if (continueBtn) {
   continueBtn.addEventListener('click', () => {
+    showGameScreen();
     loadRun();
   });
 }
@@ -474,43 +523,80 @@ if (upgradesBtn) {
   });
 }
 
+const abandonBtn= document.getElementById('btnAbandonRun');
+if (abandonBtn) {
+  abandonBtn.addEventListener('click', () => {
+    const ok = confirm('Abandon current run? You will lose the progress made this run!');
+    if (!ok) return;
+
+    clearRun();
+    running = false;
+
+    const offCanvasEl = document.getElementById('pauseMenu');
+    if (offCanvasEl) {
+      const offcanvas =
+        bootstrap.Offcanvas.getInstance(offCanvasEl) ||
+        new bootstrap.Offcanvas(offCanvasEl);
+      offcanvas.hide();
+    }
+
+    showMainMenu();
+  });
+}
+
+const buyPaddleBtn = document.getElementById('btnBuyPaddle');
+if (buyPaddleBtn) {
+  buyPaddleBtn.addEventListener('click', () => {
+    buyUpgrade('paddleWidth');
+  });
+}
+
+const buyLifeBtn = document.getElementById('btnBuyLife');
+if (buyLifeBtn) {
+  buyLifeBtn.addEventListener('click', () => {
+    buyUpgrade('extraLife');
+  });
+}
+
 function openUpgradesMenu() {
   meta = loadMeta();
-
-  const costs = {
-    paddleWidth: [20, 40, 80],
-    extraLife:   [50, 100]
-  };
 
   const pwLevel = meta.upgrades.paddleWidth || 0;
   const elLevel = meta.upgrades.extraLife || 0;
 
-  const nextPwCost = costs.paddleWidth[pwLevel];
-  const nextElCost = costs.extraLife[elLevel];
+  const nextPwCost = UPGRADE_COSTS.paddleWidth[pwLevel];
+  const nextElCost = UPGRADE_COSTS.extraLife[elLevel];
 
-  const msg =
-    `Currency: ${meta.currency}\n\n` +
-    `1) Wider Paddle\n` +
-    `   Level: ${pwLevel}, Next cost: ${nextPwCost ?? 'MAX'}\n\n` +
-    `2) Extra Life\n` +
-    `   Level: ${elLevel}, Next cost: ${nextElCost ?? 'MAX'}\n\n` +
-    `Enter 1 or 2 to buy, or anything else to cancel.`;
+  const elCurrency = document.getElementById('upCurrency');
+  const elPWLevel  = document.getElementById('upPWLevel');
+  const elPWCost   = document.getElementById('upPWCost');
+  const elELLevel  = document.getElementById('upELLevel');
+  const elELCost   = document.getElementById('upELCost');
+  const btnPW      = document.getElementById('btnBuyPaddle');
+  const btnEL      = document.getElementById('btnBuyLife');
 
-  const choice = prompt(msg);
-  if (choice === '1') {
-    buyUpgrade('paddleWidth', costs);
-  } else if (choice === '2') {
-    buyUpgrade('extraLife', costs);
-  } else {
-  }
+  if (elCurrency) elCurrency.textContent = meta.currency ?? 0;
+  if (elPWLevel)  elPWLevel.textContent  = pwLevel;
+  if (elPWCost)   elPWCost.textContent   = nextPwCost ?? 'MAX';
+  if (elELLevel)  elELLevel.textContent  = elLevel;
+  if (elELCost)   elELCost.textContent   = nextElCost ?? 'MAX';
+
+  if (btnPW) btnPW.disabled = nextPwCost == null;
+  if (btnEL) btnEL.disabled = nextElCost == null;
+
+  const modalEl = document.getElementById('upgradesModal');
+  if (!modalEl) return;
+
+  const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+  modal.show();
 }
 
-function buyUpgrade(key, costs) {
+function buyUpgrade(key) {
   meta = loadMeta();
 
-  const level = meta.upgrades[key] || 0;
-  const costArr = costs[key];
-  const cost = costArr[level];
+  const level   = meta.upgrades[key] || 0;
+  const costArr = UPGRADE_COSTS[key];
+  const cost    = costArr[level];
 
   if (cost == null) {
     alert('This upgrade is already at max level.');
@@ -526,11 +612,8 @@ function buyUpgrade(key, costs) {
   meta.upgrades[key] = level + 1;
   saveMeta();
 
-  alert(
-    `Upgrade purchased!\n` +
-    `${key} is now level ${meta.upgrades[key]}.\n` +
-    `Changes apply fully on your next NEW run.`
-  );
+  // Refresh the modal contents to show new levels and currency
+  openUpgradesMenu();
 }
 
 function loadMeta() {
@@ -652,5 +735,5 @@ function initGame() {
   running = true;
 }
 
-initGame();
+showMainMenu();
 requestAnimationFrame(loop);

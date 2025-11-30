@@ -9,6 +9,23 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+  <div id="mainMenu">
+  <div class="menu-inner text-center">
+    <h1 class="mb-3">Roguelike Brick Breaker</h1>
+    <p class="text-secondary mb-4">
+      Seeded runs, progressive difficulty, and meta upgrades.<br>
+      Start a new run or continue where you left off.
+    </p>
+    <div class="d-flex flex-column gap-2 align-items-center">
+      <button id="menuNewRun" class="btn btn-primary btn-lg px-5">New Run</button>
+      <button id="menuContinue" class="btn btn-outline-light btn-lg px-5">Continue Run</button>
+      <button id="menuUpgrades" class="btn btn-warning btn-sm mt-3">Upgrades</button>
+    </div>
+  </div>
+</div>
+
+<div id="gameScreen">
+
   <nav class="navbar navbar-expand-lg bg-body-tertiary border-bottom">
     <div class="container">
       <a class="navbar-brand fw-bold" href="#">Brick Breaker</a>
@@ -109,6 +126,7 @@
         <label class="form-check-label" for="mouseControl">Enable mouse control</label>
       </div>
       <button class="btn btn-outline-danger btn-sm" id="btnResetBest">Reset Best Score</button>
+      <button class="btn btn-danger btn-sm mt-3" id="btnAbandonRun">Abandon Run </button>
     </div>
   </div>
 
@@ -124,7 +142,7 @@
         <p class="mb-0">Level reached: <span id="goLevel">1</span></p>
         <p class="mb-3">Score: <span id="goScore">0</span></p>
         <p class="small text-secondary mb-0">
-          Upgrades and meta-progression are not implemented yet. This is a placeholder for the future upgrade screen.
+          Use your curency in the Upgrade screen to get permanenet power ups!
         </p>
       </div>
       <div class="modal-footer border-0 d-flex justify-content-between">
@@ -138,6 +156,66 @@
     </div>
   </div>
   </div>
+  </div>
+
+<div class="modal fade" id="upgradesModal" tabindex="-1" aria-labelledby="upgradesLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content bg-dark text-light">
+      <div class="modal-header border-0">
+        <h5 class="modal-title" id="upgradesLabel">Upgrades</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p class="mb-2">
+          Meta currency: <span id="upCurrency">0</span>
+        </p>
+        <p class="small text-secondary mb-3">
+          Upgrades apply on your next <strong>New Run</strong>.
+        </p>
+
+        <div class="vstack gap-3">
+          <!-- Wider Paddle -->
+          <div class="p-2 border rounded-3 bg-body-secondary">
+            <div class="d-flex justify-content-between align-items-center">
+              <div>
+                <div class="fw-semibold">Wider Paddle</div>
+                <div class="small text-secondary">Start runs with a bigger paddle.</div>
+                <div class="small mt-1">
+                  Level: <span id="upPWLevel">0</span><br>
+                  Next cost: <span id="upPWCost">–</span>
+                </div>
+              </div>
+              <button class="btn btn-sm btn-outline-info" id="btnBuyPaddle">
+                Buy
+              </button>
+            </div>
+          </div>
+
+          <!-- Extra Life -->
+          <div class="p-2 border rounded-3 bg-body-secondary">
+            <div class="d-flex justify-content-between align-items-center">
+              <div>
+                <div class="fw-semibold">Extra Life</div>
+                <div class="small text-secondary">Start runs with additional lives.</div>
+                <div class="small mt-1">
+                  Level: <span id="upELLevel">0</span><br>
+                  Next cost: <span id="upELCost">–</span>
+                </div>
+              </div>
+              <button class="btn btn-sm btn-outline-info" id="btnBuyLife">
+                Buy
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer border-0 small text-secondary">
+        Changes are saved automatically.
+      </div>
+    </div>
+  </div>
+</div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script src="script.js"></script>

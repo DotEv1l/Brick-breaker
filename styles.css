@@ -56,3 +56,27 @@ html, body {
 .hp2 { background: var(--hp2); }
 .hp3 { background: var(--hp3); }
 .hp4 { background: var(--hp4); }
+
+#mainMenu {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#mainMenu .menu-inner {
+  max-width: 480px;
+  padding: 2rem;
+  background: rgba(10, 16, 30, 0.9);
+  border-radius: 1rem;
+  box-shadow: 0 20px 40px rgba(0,0,0,.6);
+  border: 1px solid #1c2a45;
+}
+
+#gameScreen {
+  display: none;
+}
+
+.bg-body-secondary {
+  background-color: #141c2c !important;
+}
