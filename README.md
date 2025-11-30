@@ -1,287 +1,182 @@
-Brick Slayer: Roguelike Brick breaker game
-
-A browser-based roguelike Brick Breaker game built with HTML, CSS, Bootstrap, and JavaScript.
-Originally created as the portfolio project for the Nucamp JavaScript course — now evolved into a fully-featured, deterministic roguelite arcade game.
-
-Overview
-
-This game reimagines the classic Brick Breaker arcade formula into a roguelike progression system.
-Each run generates seeded level layouts, bricks have dynamic HP, the difficulty scales, and players can invest currency into permanent upgrades.
-
-The project is now well beyond MVP level and includes:
-
-Procedural levels
-
-Seed-based determinism
-
-Save/Load system
-
-Main menu
-
-Persistent upgrades
-
-Off-canvas pause menu
-
-Full HUD with live updates
-
-Features
-Implemented
-Core Gameplay
-
-Canvas-based rendering at 60 FPS using requestAnimationFrame
-
-Paddle movement (Arrow Keys or A/D)
-
-Full ball physics with bounce angles and speed clamping
-
-Brick collision with variable HP and color-coded states
-
-Score system based on brick difficulty
-
-Launch button + Spacebar to begin ball movement
-
-Dynamic difficulty scaling
-
-Procedural Level Generator
-
-Deterministic seeded generation using mulberry32
-
-“Patterns” system (Simple / Mixed / Dense rows)
-
-Brick HP scaling by:
-
-Difficulty
-
-Level number
-
-Row bonus
-
-Random per-brick HP increase
-
-Fully repeatable runs based on seed input
-
-Deterministic Seed System
-
-Seed input field with “auto” mode
-
-Displays current seed in HUD
-
-All randomness replaced with PRNG (no Math.random)
-
-Identical levels for identical seeds
-
-Save / Load System
-
-Saves run automatically at end of each cleared level
-
-Continue Run button loads:
-
-Seed
-
-Level
-
-Lives
-
-Score
-
-Difficulty
-
-Clears run on Game Over
-
-Abandon Run option available in Pause menu
-
-Meta-Currency & Upgrades
-
-Earn 10 × level currency for every cleared level
-
-Two persistent upgrades:
-
-Wider Paddle (start runs with a bigger paddle)
-
-Extra Life (start runs with more lives)
-
-Currency and upgrades stored in localStorage
-
-Upgrades apply on New Run
-
-Main Menu + UI
-
-Main menu screen with:
-
-New Run
-
-Continue Run
-
-Upgrades menu
-
-Full HUD in game view:
-
-Score
-
-Level
-
-Lives
-
-Seed
-
-Difficulty selector
-
-Modal-based Upgrades UI
-
-Modal Game Over screen
-
-Off-canvas Pause Menu with:
-
-Mouse control toggle
-
-Reset Best Score
-
-Abandon Run
-
-Project Structure
-Brick-breaker/
+# Brick Slayer  
+Roguelike Brick Breaker Game
+
+Brick Slayer is a browser-based roguelike brick breaker game built with HTML, CSS, Bootstrap, and JavaScript.  
+Originally created as a portfolio project for the Nucamp JavaScript course, it has evolved into a feature-complete, deterministic roguelite arcade experience.
+
+## Overview
+
+Brick Slayer reimagines the classic brick breaker formula by adding procedural generation, seeded runs, scalable difficulty, and permanent upgrades.  
+Each run is deterministic based on a player-defined seed, and completed levels reward currency for long-term progression.
+
+Current version includes:
+
+- Procedural level layouts  
+- Seed-based determinism  
+- Save/Load system  
+- Main menu and pause menu  
+- Persistent upgrades  
+- Full in-game HUD  
+- Scalable difficulty and level progression  
+
+## Features
+
+### Core Gameplay
+
+- Canvas rendering at 60 FPS using `requestAnimationFrame`
+- Paddle movement with arrow keys or A/D
+- Ball physics with bounce angles and speed clamping
+- Brick collision detection with variable HP and color-coded states
+- Score system based on brick difficulty
+- Launch button and Spacebar support
+- Difficulty scaling per level
+
+### Procedural Level Generator
+
+- Deterministic PRNG using `mulberry32`
+- Level patterns divided into Simple, Mixed, Dense categories
+- HP scaling influenced by:
+  - Difficulty
+  - Level number
+  - Row index
+  - Randomized HP variance  
+- Identical level layouts for identical seeds
+
+### Deterministic Seed System
+
+- Seed input with automatic fallback  
+- Seed displayed in HUD  
+- All randomness replaced by PRNG  
+- Fully reproducible runs  
+
+### Save and Load System
+
+- Automatic save when clearing a level  
+- Continue Run restores:
+  - Seed  
+  - Level  
+  - Score  
+  - Lives  
+  - Difficulty  
+- Save file cleared on Game Over  
+- Abandon Run option available in the pause menu  
+
+### Meta-Currency & Upgrades
+
+- Earn `10 × level` currency for each cleared level  
+- Permanent upgrades:
+  - Wider Paddle  
+  - Extra Life  
+- Stored in `localStorage`  
+- Upgrades take effect on New Run  
+
+## User Interface
+
+### Main Menu
+
+- New Run  
+- Continue Run  
+- Upgrades  
+
+### In-Game HUD
+
+- Score  
+- Level  
+- Lives  
+- Current seed  
+- Difficulty selector  
+
+### Modals & Menus
+
+- Upgrade modal  
+- Game Over modal  
+- Off-canvas pause menu with:
+  - Mouse input toggle  
+  - Best score reset  
+  - Abandon Run  
+
+## Project Structure
+
+```
+Brick-Slayer/
 │
-├── index.html      # Main layout + canvas + UI + menus
-├── styles.css      # Dark theme, brick colors, layout polish
-└── script.js       # Game logic, physics, PRNG, meta-progression
+├── index.html      # Layout, canvas, UI, menus
+├── styles.css      # Theme, layout, HUD, colors
+└── script.js       # Game logic, physics, RNG, upgrades
+```
 
-File Descriptions
-index.html
+## File Details
 
-Canvas container
+### index.html
+Contains all main UI elements including canvas, main menu, pause menu, HUD, difficulty selector, upgrade modal, and Game Over modal.
 
-Main menu
+### styles.css
+Dark theme, canvas frame, brick HP colors, HUD styling, and responsive layout.
 
-Offcanvas pause menu
+### script.js
+Implements paddle, ball, brick classes, physics, procedural generation, deterministic RNG, save/load logic, upgrades, menu switching, and the game loop.
 
-Game Over modal
+## Controls
 
-Upgrades modal
+| Action        | Keys / Buttons                       |
+|---------------|--------------------------------------|
+| Move Left     | A or ←                               |
+| Move Right    | D or →                               |
+| Launch Ball   | Space or Launch button               |
+| Pause         | Pause button (navbar)                |
+| Next Level    | Only appears after clearing level    |
+| Abandon Run   | Pause menu                           |
 
-Controls legend
+## Scoring System
 
-HUD elements (score, level, lives, current seed)
+Bricks award points based on their maximum HP:
 
-styles.css
-
-Dark-themed aesthetic
-
-Canvas frame styling
-
-Responsive layout
-
-HUD card visuals
-
-Color mapping for brick HP
-
-Menu & modal styling
-
-script.js
-
-Paddle / Ball / Brick classes
-
-Collisions & physics
-
-Procedural generation
-
-Deterministic seeded RNG
-
-Save/load logic
-
-Meta-upgrades system
-
-Main menu & screen switching
-
-Key listeners & input control
-
-Game loop (update, draw, loop)
-
-Controls
-Action	Keys / Buttons
-Move Left	A / ←
-Move Right	D / →
-Launch Ball	Space / Launch button
-Pause	Pause navbar button
-Next Level	Button (appears after clearing level)
-Abandon Run	Pause menu (offcanvas)
-Scoring System
-
-Bricks award points based on difficulty:
-
+```javascript
 score += brick.maxHp * 10;
+```
 
+## Procedural Generation Summary
 
-Harder bricks = more score.
+Runs are fully deterministic using:
 
-Procedural Generation (Seed-based)
-
-Every level uses:
-
-A chosen pattern row
-
-Difficulty multipliers
-
-Row-based HP bonuses
-
-Random per-brick HP variance
-
-All randomness is driven by:
-
+```javascript
 rng = mulberry32(seed);
+```
 
+## Roadmap
 
-So the entire run is 100% reproducible.
+### Completed
+- Main menu  
+- Continue Run  
+- Save/Load persistence  
+- Seed-based procedural levels  
+- Difficulty selection  
+- Permanent upgrades  
+- Pause menu with Abandon Run  
+- UI and HUD polish  
+- Organized commit history  
 
-Roadmap
-Completed
+### In Progress / Planned
+- Improved upgrade UI  
+- Disable Continue Run when no save exists  
+- Power-ups  
+- Brick destruction particles  
+- Sound effects  
+- Achievements  
+- Daily seed challenge  
 
-Main menu
+## Deployment
 
-Continue Run
+Recommended deployment via GitHub Pages:
 
-Save/Load run persistence
+1. Push project to GitHub  
+2. Settings → Pages  
+3. Select branch: `main`, folder: `/`  
+4. Save and wait for build  
 
-Deterministic seeded levels
+Your game becomes publicly accessible.
 
-Difficulty selector
+## Author
 
-Meta-upgrades system
-
-Pause menu + Abandon Run
-
-UI/HUD polish
-
-Full commit history with iterative development ✔
-
-In Progress / Next Steps
-
-UI polish for upgrades (animations, icons)
-
-Disable Continue button when no save exists
-
-Power-ups (slow ball, widen paddle temporarily, multi-ball)
-
-Brick destruction particles
-
-Light SFX
-
-Achievements
-
-Daily seed challenge
-
-Deployment
-
-This project can be deployed using GitHub Pages, Netlify, or Vercel.
-
-Recommended:
-
-Push repo to GitHub
-
-Enable GitHub Pages (branch: main, folder /root)
-
-Done — your game is online
-
-Author
-
-Erick V. Lozano
-Brick Slayer – JavaScript Portfolio Project (Nucamp)
+**Erick V. Lozano**  
+Brick Slayer – Nucamp JavaScript Portfolio Project
